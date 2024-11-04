@@ -1,6 +1,6 @@
 use mlua::prelude::*;
 use raug::{
-    builder::static_node_builder::{StaticInput, StaticNode, StaticOutput},
+    builder::node_builder::{Input, Node, Output},
     prelude::{Message, Param},
 };
 use serde::Serialize;
@@ -8,7 +8,7 @@ use serde::Serialize;
 use crate::LuaBang;
 
 #[derive(Clone, Serialize, FromLua)]
-pub struct LuaNode(pub(crate) StaticNode);
+pub struct LuaNode(pub(crate) Node);
 
 impl LuaUserData for LuaNode {
     fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
@@ -24,8 +24,12 @@ impl LuaUserData for LuaNode {
             _ => Err(mlua::Error::external("Invalid output type")),
         });
 
-        methods.add_method("m2s", |_, this, _args: ()| Ok(LuaNode(this.0.m2s())));
-        methods.add_method("s2m", |_, this, _args: ()| Ok(LuaNode(this.0.s2m())));
+        methods.add_method("to_audio", |_, this, _args: ()| {
+            Ok(LuaNode(this.0.to_audio()))
+        });
+        methods.add_method("to_message", |_, this, _args: ()| {
+            Ok(LuaNode(this.0.to_message()))
+        });
 
         methods.add_meta_method("__add", |_, this, other: LuaValue| match other {
             LuaValue::Number(float) => Ok(LuaNode(&this.0 + float)),
@@ -91,7 +95,7 @@ impl LuaUserData for LuaNode {
 }
 
 #[derive(Clone, Serialize, FromLua)]
-pub struct LuaInput(pub(crate) StaticInput);
+pub struct LuaInput(pub(crate) Input);
 
 impl LuaUserData for LuaInput {
     fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
@@ -116,7 +120,7 @@ impl LuaUserData for LuaInput {
 }
 
 #[derive(Clone, Serialize, FromLua)]
-pub struct LuaOutput(pub(crate) StaticOutput);
+pub struct LuaOutput(pub(crate) Output);
 
 impl LuaUserData for LuaOutput {
     fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {

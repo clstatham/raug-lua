@@ -10,6 +10,8 @@ local sine = graph:sine_osc()
 local freq = sine:input("frequency"):param()
 freq:set(440.0)
 
+sine = sine * 0.2
+
 sine:output(0):connect(out1:input(0))
 sine:output(0):connect(out2:input(0))
 

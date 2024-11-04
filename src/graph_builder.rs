@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{graph::LuaGraph, node_builder::LuaNode, runtime::LuaRuntime, LuaBang};
 
 #[derive(Clone, Default, Serialize, Deserialize, FromLua)]
-pub struct LuaGraphBuilder(StaticGraphBuilder);
+pub struct LuaGraphBuilder(GraphBuilder);
 
 impl LuaUserData for LuaGraphBuilder {
     fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
@@ -92,11 +92,11 @@ impl LuaGraphBuilder {
     }
 
     pub fn input(&self) -> LuaNode {
-        LuaNode(self.0.input())
+        LuaNode(self.0.add_input())
     }
 
     pub fn output(&self) -> LuaNode {
-        LuaNode(self.0.output())
+        LuaNode(self.0.add_output())
     }
 }
 
