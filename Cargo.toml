@@ -17,5 +17,6 @@ mlua = { version = "0.10", features = [
 serde = { version = "1", features = ["derive"] }
 
 [dependencies.raug]
-git = "https://github.com/clstatham/raug"
+# git = "https://github.com/clstatham/raug"
+path = "../raug"
 features = ["serde"]

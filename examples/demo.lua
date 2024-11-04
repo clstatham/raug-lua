@@ -7,13 +7,24 @@ local out2 = graph:output()
 
 local sine = graph:sine_osc()
 
-sine:input("frequency"):set(440.0)
+local freq = sine:input("frequency"):param()
+freq:set(440.0)
 
 sine:output(0):connect(out1:input(0))
 sine:output(0):connect(out2:input(0))
 
-graph:build_runtime():run_for(1.0)
+local runtime = graph:build_runtime()
 
-sine:input("frequency"):set(880.0)
+local handle = runtime:run()
 
-graph:build_runtime():run_for(1.0)
+raug.sleep(1.0)
+
+freq:set(880.0)
+
+raug.sleep(1.0)
+
+freq:set(220.0)
+
+raug.sleep(1.0)
+
+handle:stop()

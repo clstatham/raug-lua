@@ -1,8 +1,8 @@
+use mlua::prelude::*;
 use raug::{
     builder::static_node_builder::{StaticInput, StaticNode, StaticOutput},
-    prelude::Message,
+    prelude::{Message, Param},
 };
-use mlua::prelude::*;
 use serde::Serialize;
 
 use crate::LuaBang;
@@ -110,6 +110,8 @@ impl LuaUserData for LuaInput {
             }
             Ok(())
         });
+
+        methods.add_method("param", |_, this, _args: ()| Ok(LuaParam(this.0.param())));
     }
 }
 
@@ -121,6 +123,36 @@ impl LuaUserData for LuaOutput {
         methods.add_method("connect", |_, this, input: LuaInput| {
             this.0.connect(&input.0);
             Ok(())
+        });
+    }
+}
+
+#[derive(Clone, Serialize, FromLua)]
+pub struct LuaParam(pub(crate) Param);
+
+impl LuaUserData for LuaParam {
+    fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
+        methods.add_method("set", |_, this, value: LuaValue| {
+            match value {
+                LuaValue::Number(float) => this.0.set(float),
+                LuaValue::Integer(int) => this.0.set(int),
+                LuaValue::String(string) => this.0.set(string.to_string_lossy()),
+                _ => return Err(mlua::Error::external("Invalid value type")),
+            }
+            Ok(())
+        });
+
+        methods.add_method_mut("get", |lua, this, _: ()| match this.0.get() {
+            Some(value) => match value {
+                Message::Bang => Ok(LuaValue::UserData(
+                    lua.create_ser_userdata(LuaBang).unwrap(),
+                )),
+                Message::Int(int) => Ok(LuaValue::Integer(int)),
+                Message::Float(float) => Ok(LuaValue::Number(float)),
+                Message::String(string) => Ok(LuaValue::String(lua.create_string(&string)?)),
+                _ => Err(mlua::Error::external("Invalid value type")),
+            },
+            None => Err(mlua::Error::external("Parameter is not set")),
         });
     }
 }

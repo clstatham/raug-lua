@@ -1,5 +1,5 @@
 use mlua::prelude::*;
-use raug::prelude::*;
+use raug::{prelude::*, runtime::RuntimeHandle};
 use serde::Serialize;
 
 #[derive(Clone, Serialize, FromLua)]
@@ -15,6 +15,23 @@ impl LuaUserData for LuaRuntime {
                     Device::Default,
                 )
                 .unwrap();
+            Ok(())
+        });
+
+        methods.add_method_mut("run", |_, this, _: ()| {
+            let handle = this.0.run(Backend::Default, Device::Default).unwrap();
+            Ok(LuaRuntimeHandle(handle))
+        });
+    }
+}
+
+#[derive(Clone, FromLua)]
+pub struct LuaRuntimeHandle(pub(crate) RuntimeHandle);
+
+impl LuaUserData for LuaRuntimeHandle {
+    fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
+        methods.add_method("stop", |_, this, _: ()| {
+            this.0.stop();
             Ok(())
         });
     }
