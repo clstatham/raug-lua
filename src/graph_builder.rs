@@ -2,7 +2,12 @@ use mlua::prelude::*;
 use raug::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{graph::LuaGraph, node_builder::LuaNode, runtime::LuaRuntime, LuaBang};
+use crate::{
+    graph::LuaGraph,
+    node_builder::{LuaNode, LuaParam},
+    runtime::LuaRuntime,
+    LuaBang,
+};
 
 #[derive(Clone, Default, Serialize, Deserialize, FromLua)]
 pub struct LuaGraphBuilder(GraphBuilder);
@@ -11,6 +16,10 @@ impl LuaUserData for LuaGraphBuilder {
     fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
         methods.add_method("input", |_lua, this, _args: ()| Ok(this.input()));
         methods.add_method("output", |_lua, this, _args: ()| Ok(this.output()));
+
+        methods.add_method("sample_rate", |_lua, this, _args: ()| {
+            Ok(LuaNode(this.0.sample_rate()))
+        });
 
         methods.add_method(
             "print",
@@ -61,6 +70,10 @@ impl LuaUserData for LuaGraphBuilder {
                 _ => Err(mlua::Error::external("Invalid message type")),
             },
         );
+
+        methods.add_method("phase_accum", |_lua, this, _args: ()| {
+            Ok(LuaNode(this.0.phase_accum()))
+        });
 
         methods.add_method("sine_osc", |_lua, this, _args: ()| {
             Ok(LuaNode(this.0.sine_osc()))

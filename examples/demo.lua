@@ -1,3 +1,4 @@
+local math = require("math")
 local raug = require("raug")
 
 local graph = raug.graph_builder()
@@ -5,10 +6,16 @@ local graph = raug.graph_builder()
 local out1 = graph:output()
 local out2 = graph:output()
 
-local sine = graph:sine_osc()
+local sr = graph:sample_rate()
 
-local freq = sine:input("frequency"):param()
+local pa = graph:phase_accum()
+
+pa:input(0):connect(sr:recip():output(0))
+
+local freq = raug.param()
 freq:set(440.0)
+
+local sine = (pa * 2.0 * math.pi * freq):sin()
 
 sine = sine * 0.2
 

@@ -36,6 +36,9 @@ impl LuaUserData for LuaNode {
             LuaValue::UserData(data) if data.is::<LuaNode>() => {
                 Ok(LuaNode(&this.0 + &data.borrow::<LuaNode>().unwrap().0))
             }
+            LuaValue::UserData(data) if data.is::<LuaParam>() => Ok(LuaNode(
+                &this.0 + data.borrow::<LuaParam>().unwrap().0.clone(),
+            )),
             _ => Err(mlua::Error::external("Invalid operand type")),
         });
 
@@ -44,6 +47,9 @@ impl LuaUserData for LuaNode {
             LuaValue::UserData(data) if data.is::<LuaNode>() => {
                 Ok(LuaNode(&this.0 - &data.borrow::<LuaNode>().unwrap().0))
             }
+            LuaValue::UserData(data) if data.is::<LuaParam>() => Ok(LuaNode(
+                &this.0 - data.borrow::<LuaParam>().unwrap().0.clone(),
+            )),
             _ => Err(mlua::Error::external("Invalid operand type")),
         });
 
@@ -52,6 +58,9 @@ impl LuaUserData for LuaNode {
             LuaValue::UserData(data) if data.is::<LuaNode>() => {
                 Ok(LuaNode(&this.0 * &data.borrow::<LuaNode>().unwrap().0))
             }
+            LuaValue::UserData(data) if data.is::<LuaParam>() => Ok(LuaNode(
+                &this.0 * data.borrow::<LuaParam>().unwrap().0.clone(),
+            )),
             _ => Err(mlua::Error::external("Invalid operand type")),
         });
 
@@ -60,6 +69,20 @@ impl LuaUserData for LuaNode {
             LuaValue::UserData(data) if data.is::<LuaNode>() => {
                 Ok(LuaNode(&this.0 / &data.borrow::<LuaNode>().unwrap().0))
             }
+            LuaValue::UserData(data) if data.is::<LuaParam>() => Ok(LuaNode(
+                &this.0 / data.borrow::<LuaParam>().unwrap().0.clone(),
+            )),
+            _ => Err(mlua::Error::external("Invalid operand type")),
+        });
+
+        methods.add_meta_method("__mod", |_, this, other: LuaValue| match other {
+            LuaValue::Number(float) => Ok(LuaNode(&this.0 % float)),
+            LuaValue::UserData(data) if data.is::<LuaNode>() => {
+                Ok(LuaNode(&this.0 % &data.borrow::<LuaNode>().unwrap().0))
+            }
+            LuaValue::UserData(data) if data.is::<LuaParam>() => Ok(LuaNode(
+                &this.0 % data.borrow::<LuaParam>().unwrap().0.clone(),
+            )),
             _ => Err(mlua::Error::external("Invalid operand type")),
         });
 
@@ -78,8 +101,17 @@ impl LuaUserData for LuaNode {
         macro_rules! impl_binary_op {
             ($($method:ident),*) => {
                 $(
-                    methods.add_method(stringify!($method), |_, this, other: f64| {
-                        Ok(LuaNode(this.0.$method(other)))
+                    methods.add_method(stringify!($method), |_, this, other: LuaValue| {
+                        match other {
+                            LuaValue::Number(float) => Ok(LuaNode(this.0.$method(float))),
+                            LuaValue::UserData(data) if data.is::<LuaNode>() => {
+                                Ok(LuaNode(this.0.$method(&data.borrow::<LuaNode>().unwrap().0)))
+                            }
+                            LuaValue::UserData(data) if data.is::<LuaParam>() => {
+                                Ok(LuaNode(this.0.$method(data.borrow::<LuaParam>().unwrap().0.clone())))
+                            }
+                            _ => Err(mlua::Error::external("Invalid operand type")),
+                        }
                     });
                 )*
             };
@@ -107,7 +139,7 @@ impl LuaUserData for LuaInput {
         methods.add_method("set", |_, this, value: LuaValue| {
             match value {
                 LuaValue::UserData(data) if data.is::<LuaBang>() => this.0.set(Message::Bang),
-                LuaValue::Number(float) => this.0.set(float),
+                LuaValue::Number(float) => this.0.set(Message::Float(float)),
                 LuaValue::Integer(int) => this.0.set(Message::Int(int)),
                 LuaValue::String(string) => this.0.set(Message::String(string.to_string_lossy())),
                 _ => return Err(mlua::Error::external("Invalid message type")),
