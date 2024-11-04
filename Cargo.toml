@@ -1,0 +1,21 @@
+[package]
+name = "raug-lua"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "raug"
+crate-type = ["cdylib"]
+
+[dependencies]
+mlua = { version = "0.10", features = [
+    "lua54",
+    "serialize",
+    "module",
+    "macros",
+] }
+serde = { version = "1", features = ["derive"] }
+
+[dependencies.raug]
+git = "https://github.com/clstatham/raug"
+features = ["serde"]
