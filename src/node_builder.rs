@@ -146,7 +146,9 @@ impl LuaUserData for LuaInput {
             Ok(())
         });
 
-        methods.add_method("param", |_, this, _args: ()| Ok(LuaParam(this.0.param())));
+        methods.add_method("param", |_, this, name: LuaString| {
+            Ok(LuaParam(this.0.param(name.to_str()?.to_string())))
+        });
     }
 }
 

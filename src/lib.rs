@@ -18,8 +18,8 @@ pub fn bang(_: &Lua, _: ()) -> LuaResult<LuaBang> {
     Ok(LuaBang)
 }
 
-pub fn param(_: &Lua, _: ()) -> LuaResult<LuaParam> {
-    Ok(LuaParam(Param::new()))
+pub fn param(_: &Lua, name: LuaString) -> LuaResult<LuaParam> {
+    Ok(LuaParam(Param::new(name.to_str()?.to_string())))
 }
 
 pub fn sleep(_: &Lua, duration: f64) -> LuaResult<()> {
