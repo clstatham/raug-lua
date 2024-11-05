@@ -1,15 +1,9 @@
 use mlua::prelude::*;
 use raug::prelude::*;
-use serde::{Deserialize, Serialize};
 
-use crate::{
-    graph::LuaGraph,
-    node_builder::{LuaNode, LuaParam},
-    runtime::LuaRuntime,
-    LuaBang,
-};
+use crate::{graph::LuaGraph, node_builder::LuaNode, runtime::LuaRuntime, LuaBang};
 
-#[derive(Clone, Default, Serialize, Deserialize, FromLua)]
+#[derive(Clone, Default, FromLua)]
 pub struct LuaGraphBuilder(GraphBuilder);
 
 impl LuaUserData for LuaGraphBuilder {
@@ -114,5 +108,5 @@ impl LuaGraphBuilder {
 }
 
 pub fn graph_builder(lua: &Lua, _args: ()) -> LuaResult<LuaAnyUserData> {
-    lua.create_ser_userdata(LuaGraphBuilder::new())
+    lua.create_userdata(LuaGraphBuilder::new())
 }

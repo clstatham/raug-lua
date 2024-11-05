@@ -3,14 +3,13 @@ use mlua::prelude::*;
 use graph_builder::graph_builder;
 use node_builder::LuaParam;
 use raug::prelude::Param;
-use serde::Serialize;
 
 pub mod graph;
 pub mod graph_builder;
 pub mod node_builder;
 pub mod runtime;
 
-#[derive(Clone, Serialize, FromLua)]
+#[derive(Clone, FromLua)]
 pub struct LuaBang;
 
 impl LuaUserData for LuaBang {}

@@ -1,8 +1,7 @@
 use mlua::prelude::*;
 use raug::{prelude::*, runtime::RuntimeHandle};
-use serde::Serialize;
 
-#[derive(Clone, Serialize, FromLua)]
+#[derive(Clone, FromLua)]
 pub struct LuaRuntime(pub(crate) Runtime);
 
 impl LuaUserData for LuaRuntime {

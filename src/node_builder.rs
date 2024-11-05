@@ -3,11 +3,10 @@ use raug::{
     builder::node_builder::{Input, Node, Output},
     prelude::{Message, Param},
 };
-use serde::Serialize;
 
 use crate::LuaBang;
 
-#[derive(Clone, Serialize, FromLua)]
+#[derive(Clone, FromLua)]
 pub struct LuaNode(pub(crate) Node);
 
 impl LuaUserData for LuaNode {
@@ -126,7 +125,7 @@ impl LuaUserData for LuaNode {
     }
 }
 
-#[derive(Clone, Serialize, FromLua)]
+#[derive(Clone, FromLua)]
 pub struct LuaInput(pub(crate) Input);
 
 impl LuaUserData for LuaInput {
@@ -151,7 +150,7 @@ impl LuaUserData for LuaInput {
     }
 }
 
-#[derive(Clone, Serialize, FromLua)]
+#[derive(Clone, FromLua)]
 pub struct LuaOutput(pub(crate) Output);
 
 impl LuaUserData for LuaOutput {
@@ -163,12 +162,12 @@ impl LuaUserData for LuaOutput {
     }
 }
 
-#[derive(Clone, Serialize, FromLua)]
+#[derive(Clone, FromLua)]
 pub struct LuaParam(pub(crate) Param);
 
 impl LuaUserData for LuaParam {
     fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
-        methods.add_method("set", |_, this, value: LuaValue| {
+        methods.add_method_mut("set", |_, this, value: LuaValue| {
             match value {
                 LuaValue::Number(float) => this.0.set(float),
                 LuaValue::Integer(int) => this.0.set(int),
@@ -180,9 +179,7 @@ impl LuaUserData for LuaParam {
 
         methods.add_method_mut("get", |lua, this, _: ()| match this.0.get() {
             Some(value) => match value {
-                Message::Bang => Ok(LuaValue::UserData(
-                    lua.create_ser_userdata(LuaBang).unwrap(),
-                )),
+                Message::Bang => Ok(LuaValue::UserData(lua.create_userdata(LuaBang).unwrap())),
                 Message::Int(int) => Ok(LuaValue::Integer(int)),
                 Message::Float(float) => Ok(LuaValue::Number(float)),
                 Message::String(string) => Ok(LuaValue::String(lua.create_string(&string)?)),
