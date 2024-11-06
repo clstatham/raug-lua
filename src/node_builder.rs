@@ -116,10 +116,7 @@ impl LuaUserData for LuaNode {
             };
         }
 
-        impl_unary_op!(
-            sin, cos, tan, asin, acos, atan, sqrt, cbrt, ceil, floor, round, abs, signum, fract,
-            recip
-        );
+        impl_unary_op!(sin, cos, tan, sqrt, cbrt, ceil, floor, round, abs, signum, fract, recip);
 
         impl_binary_op!(powf, add, sub, mul, div, rem, min, max, atan2, hypot);
     }
