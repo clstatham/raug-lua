@@ -8,7 +8,7 @@ name = "raug"
 crate-type = ["cdylib"]
 
 [dependencies]
-mlua = { version = "0.10", features = [
+mlua = { version = "0.10.2", features = [
     "lua54",
     "serialize",
     "module",
@@ -20,3 +20,6 @@ mlua = { version = "0.10", features = [
 # git = "https://github.com/clstatham/raug"
 path = "../raug"
 # features = ["serde"]
+
+[dependencies.raug-ext]
+path = "../raug-ext"
