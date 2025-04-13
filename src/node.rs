@@ -82,7 +82,7 @@ impl LuaUserData for LuaNode {
             };
         }
 
-        impl_unary_op!(sin, cos, tan, sqrt, ceil, floor, round, abs, signum, fract);
+        impl_unary_op!(sin, cos, tan, sqrt, ceil, floor, round, abs, signum, fract, recip);
 
         impl_binary_op!(powf, add, sub, mul, div, rem, min, max, atan2, hypot);
     }
@@ -94,5 +94,100 @@ pub struct LuaOutput(pub(crate) Output);
 impl LuaUserData for LuaOutput {
     fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
         methods.add_method("node", |_, this, _: ()| Ok(LuaNode(this.0.node())));
+
+        methods.add_meta_method("__add", |_, this, other: LuaValue| {
+            let graph = crate::get_graph();
+            match other {
+                LuaValue::Number(float) => Ok(LuaOutput(
+                    (this.0.clone() + (float as f32)).into_output(&graph),
+                )),
+                LuaValue::Integer(intenger) => {
+                    Ok(LuaOutput((this.0.clone() + intenger).into_output(&graph)))
+                }
+                LuaValue::UserData(data) if data.is::<LuaOutput>() => Ok(LuaOutput(
+                    (this.0.clone() + data.borrow::<LuaOutput>().unwrap().0.clone())
+                        .into_output(&graph),
+                )),
+                _ => Err(mlua::Error::external("Invalid operand type")),
+            }
+        });
+
+        methods.add_meta_method("__sub", |_, this, other: LuaValue| {
+            let graph = crate::get_graph();
+            match other {
+                LuaValue::Number(float) => Ok(LuaOutput(
+                    (this.0.clone() - (float as f32)).into_output(&graph),
+                )),
+                LuaValue::Integer(intenger) => {
+                    Ok(LuaOutput((this.0.clone() - intenger).into_output(&graph)))
+                }
+                LuaValue::UserData(data) if data.is::<LuaOutput>() => Ok(LuaOutput(
+                    (this.0.clone() - data.borrow::<LuaOutput>().unwrap().0.clone())
+                        .into_output(&graph),
+                )),
+                _ => Err(mlua::Error::external("Invalid operand type")),
+            }
+        });
+
+        methods.add_meta_method("__mul", |_, this, other: LuaValue| {
+            let graph = crate::get_graph();
+            match other {
+                LuaValue::Number(float) => Ok(LuaOutput(
+                    (this.0.clone() * (float as f32)).into_output(&graph),
+                )),
+                LuaValue::Integer(intenger) => {
+                    Ok(LuaOutput((this.0.clone() * intenger).into_output(&graph)))
+                }
+                LuaValue::UserData(data) if data.is::<LuaOutput>() => Ok(LuaOutput(
+                    (this.0.clone() * data.borrow::<LuaOutput>().unwrap().0.clone())
+                        .into_output(&graph),
+                )),
+                _ => Err(mlua::Error::external("Invalid operand type")),
+            }
+        });
+
+        methods.add_meta_method("__div", |_, this, other: LuaValue| {
+            let graph = crate::get_graph();
+            match other {
+                LuaValue::Number(float) => Ok(LuaOutput(
+                    (this.0.clone() / (float as f32)).into_output(&graph),
+                )),
+                LuaValue::Integer(intenger) => {
+                    Ok(LuaOutput((this.0.clone() / intenger).into_output(&graph)))
+                }
+                LuaValue::UserData(data) if data.is::<LuaOutput>() => Ok(LuaOutput(
+                    (this.0.clone() / data.borrow::<LuaOutput>().unwrap().0.clone())
+                        .into_output(&graph),
+                )),
+                _ => Err(mlua::Error::external("Invalid operand type")),
+            }
+        });
+
+        methods.add_meta_method("__mod", |_, this, other: LuaValue| {
+            let graph = crate::get_graph();
+            match other {
+                LuaValue::Number(float) => Ok(LuaOutput(
+                    (this.0.clone() % (float as f32)).into_output(&graph),
+                )),
+                LuaValue::Integer(intenger) => {
+                    Ok(LuaOutput((this.0.clone() % intenger).into_output(&graph)))
+                }
+                LuaValue::UserData(data) if data.is::<LuaOutput>() => Ok(LuaOutput(
+                    (this.0.clone() % data.borrow::<LuaOutput>().unwrap().0.clone())
+                        .into_output(&graph),
+                )),
+                _ => Err(mlua::Error::external("Invalid operand type")),
+            }
+        });
+
+        methods.add_meta_method("__unm", |_, this, _: ()| {
+            let graph = crate::get_graph();
+            Ok(LuaOutput((-this.0.clone()).into_output(&graph)))
+        });
+
+        methods.add_method("recip", |_, this, _: ()| {
+            let graph = crate::get_graph();
+            Ok(LuaOutput(this.0.clone().recip().into_output(&graph)))
+        });
     }
 }

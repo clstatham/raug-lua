@@ -40,7 +40,7 @@ pub fn run_for(_lua: &Lua, duration: f64) -> LuaResult<()> {
     stream.play().unwrap();
     let start = std::time::Instant::now();
     while start.elapsed().as_secs_f64() < duration {
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::thread::sleep(std::time::Duration::from_millis(1));
     }
     stream.stop().unwrap();
     Ok(())

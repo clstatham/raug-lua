@@ -43,7 +43,7 @@ impl FromLua for LuaOutput {
 pub fn register_all(lua: &Lua, exports: &LuaTable) -> LuaResult<()> {
     macro_rules! processor {
         ($fn_name:ident, $name:ident) => {
-            pub fn $fn_name(lua: &Lua, args: LuaMultiValue) -> LuaResult<LuaTable> {
+            pub fn $fn_name(lua: &Lua, args: LuaMultiValue) -> LuaResult<LuaMultiValue> {
                 let graph = crate::get_graph();
                 let node = graph.add($name::default());
 
@@ -54,15 +54,14 @@ pub fn register_all(lua: &Lua, exports: &LuaTable) -> LuaResult<()> {
                     }
                 }
 
-                let table = lua.create_table()?;
+                let mut values = LuaMultiValue::new();
                 for i in 0..node.num_outputs() {
                     let output = node.output(i as u32);
-                    let name = output.name();
                     let output = LuaOutput(output);
-                    table.set(name, output)?;
+                    values.push_back(LuaValue::UserData(lua.create_userdata(output)?));
                 }
 
-                Ok(table)
+                Ok(values)
             }
 
             exports.set(stringify!($fn_name), lua.create_function($fn_name)?)?;
@@ -73,6 +72,8 @@ pub fn register_all(lua: &Lua, exports: &LuaTable) -> LuaResult<()> {
     processor!(sine_oscillator, SineOscillator);
     processor!(bl_saw_oscillator, BlSawOscillator);
     processor!(phase_accumulator, PhaseAccumulator);
+    processor!(sin, Sin);
+    processor!(cos, Cos);
 
     Ok(())
 }

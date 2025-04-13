@@ -3,38 +3,22 @@ local raug = require("raug")
 
 local two_pi = 2.0 * math.pi
 
-local graph = raug.graph_builder()
+local sr = raug.sample_rate()
 
-local out1 = graph:output()
-local out2 = graph:output()
-
-local sr = graph:sample_rate()
-
-local pa = graph:phase_accum()
-pa:input(0):connect(sr:recip():output(0))
+local pa = raug.phase_accumulator(sr:recip())
 pa = pa % 1.0
 
-local freq1 = raug.param()
-local freq2 = raug.param()
-local freq3 = raug.param()
+local freq1 = 440.0
+local freq2 = 220.0
+local freq3 = 880.0
 
-freq1:set(440.0)
-freq2:set(220.0)
-freq3:set(880.0)
-
-local sine1 = (pa * two_pi * freq1):sin()
-local sine2 = (pa * two_pi * freq2 + sine1):sin()
-local sine3 = (pa * two_pi * freq3 + sine2):sin()
+local sine1 = raug.sin(pa * two_pi * freq1)
+local sine2 = raug.sin(pa * two_pi * freq2 + sine1)
+local sine3 = raug.sin(pa * two_pi * freq3 + sine2)
 
 local final = sine3 * 0.2
 
-final:output(0):connect(out1:input(0))
-final:output(0):connect(out2:input(0))
+raug.audio_output(final)
+raug.audio_output(final)
 
-local runtime = graph:build_runtime()
-
-local handle = runtime:run()
-
-raug.sleep(1.0)
-
-handle:stop()
+raug.run_for(5.0)
