@@ -5,8 +5,7 @@ local two_pi = 2.0 * math.pi
 
 local sr = raug.sample_rate()
 
-local pa = raug.phase_accumulator(sr:recip())
-pa = pa % 1.0
+local pa = raug.phase_accumulator(sr:recip()) % 1.0
 
 local freq1 = 440.0
 local freq2 = 220.0
