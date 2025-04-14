@@ -4,6 +4,28 @@ use raug_ext::prelude::*;
 
 use crate::node::LuaOutput;
 
+fn connect_inputs_and_outputs(
+    node: &Node,
+    lua: &Lua,
+    args: &LuaMultiValue,
+) -> LuaResult<LuaMultiValue> {
+    for i in 0..node.num_inputs() {
+        if args.get(i).is_some_and(|v| !v.is_nil()) {
+            let input = LuaOutput::from_lua(args[i].clone(), lua)?;
+            node.input(i as u32).connect(input.0);
+        }
+    }
+
+    let mut values = LuaMultiValue::new();
+    for i in 0..node.num_outputs() {
+        let output = node.output(i as u32);
+        let output = LuaOutput(output);
+        values.push_back(LuaValue::UserData(lua.create_userdata(output)?));
+    }
+
+    Ok(values)
+}
+
 pub fn register_all(lua: &Lua, exports: &LuaTable) -> LuaResult<()> {
     macro_rules! processor {
         ($fn_name:ident, $name:ty) => {
@@ -11,21 +33,7 @@ pub fn register_all(lua: &Lua, exports: &LuaTable) -> LuaResult<()> {
                 let graph = crate::get_graph();
                 let node = graph.add(<$name>::default());
 
-                for i in 0..node.num_inputs() {
-                    if args.get(i).is_some_and(|v| !v.is_nil()) {
-                        let input = LuaOutput::from_lua(args[i].clone(), lua)?;
-                        node.input(i as u32).connect(input.0);
-                    }
-                }
-
-                let mut values = LuaMultiValue::new();
-                for i in 0..node.num_outputs() {
-                    let output = node.output(i as u32);
-                    let output = LuaOutput(output);
-                    values.push_back(LuaValue::UserData(lua.create_userdata(output)?));
-                }
-
-                Ok(values)
+                connect_inputs_and_outputs(&node, lua, &args)
             }
 
             exports.set(stringify!($fn_name), lua.create_function($fn_name)?)?;
@@ -56,21 +64,7 @@ pub fn register_all(lua: &Lua, exports: &LuaTable) -> LuaResult<()> {
                 };
 
 
-                for i in 0..node.num_inputs() {
-                    if args.get(i).is_some_and(|v| !v.is_nil()) {
-                        let input = LuaOutput::from_lua(args[i].clone(), lua)?;
-                        node.input(i as u32).connect(input.0);
-                    }
-                }
-
-                let mut values = LuaMultiValue::new();
-                for i in 0..node.num_outputs() {
-                    let output = node.output(i as u32);
-                    let output = LuaOutput(output);
-                    values.push_back(LuaValue::UserData(lua.create_userdata(output)?));
-                }
-
-                Ok(values)
+                connect_inputs_and_outputs(&node, lua, &args)
             }
 
             exports.set(stringify!($fn_name), lua.create_function($fn_name)?)?;
@@ -112,5 +106,29 @@ pub fn register_all(lua: &Lua, exports: &LuaTable) -> LuaResult<()> {
     generic_processor!(unwrap_or, UnwrapOr => f32, i64, bool, Option<f32>, Option<i64>, Option<bool>);
     generic_processor!(some, Some => f32, i64, bool, Option<f32>, Option<i64>, Option<bool>);
 
+    exports.set("random_choice", lua.create_function(random_choice)?)?;
+
     Ok(())
+}
+
+pub fn random_choice(lua: &Lua, args: LuaMultiValue) -> LuaResult<LuaMultiValue> {
+    let graph = crate::get_graph();
+    let second_arg = args.get(1).filter(|v| !v.is_nil()).cloned();
+    let Some(second_arg) = second_arg else {
+        return Err(LuaError::RuntimeError("Expected two arguments".to_string()));
+    };
+    let second_arg = LuaOutput::from_lua(second_arg, lua)?;
+    let node = match second_arg.0.signal_type() {
+        t if t == List::<f32>::signal_type() => graph.add(RandomChoice::<f32>::default()),
+        t if t == List::<i64>::signal_type() => graph.add(RandomChoice::<i64>::default()),
+        t if t == List::<bool>::signal_type() => graph.add(RandomChoice::<bool>::default()),
+        _ => {
+            return Err(LuaError::RuntimeError(format!(
+                "Unsupported signal type: {}",
+                second_arg.0.signal_type().name()
+            )));
+        }
+    };
+
+    connect_inputs_and_outputs(&node, lua, &args)
 }

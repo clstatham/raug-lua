@@ -185,9 +185,12 @@ impl LuaUserData for LuaOutput {
             Ok(LuaOutput((-this.0.clone()).into_output(&graph)))
         });
 
-        methods.add_method("recip", |_, this, _: ()| {
+        methods.add_method("unwrap_or", |lua, this, default: LuaValue| {
             let graph = crate::get_graph();
-            Ok(LuaOutput(this.0.clone().recip().into_output(&graph)))
+            let default = LuaOutput::from_lua(default, lua)?;
+            Ok(LuaOutput(
+                this.0.clone().unwrap_or(default.0).into_output(&graph),
+            ))
         });
     }
 }
@@ -199,6 +202,91 @@ impl FromLua for LuaOutput {
             LuaValue::Number(n) => Ok(LuaOutput((n as f32).into_output(&graph))),
             LuaValue::Integer(i) => Ok(LuaOutput(i.into_output(&graph))),
             LuaValue::Boolean(b) => Ok(LuaOutput(b.into_output(&graph))),
+            LuaValue::String(s) => {
+                let str = StringSignal::from_str(&s.to_string_lossy());
+                Ok(LuaOutput(str.into_output(&graph)))
+            }
+            LuaValue::Table(tab) => {
+                let values = tab
+                    .sequence_values()
+                    .collect::<Result<Vec<LuaValue>, LuaError>>()?;
+
+                let output = match values[0].clone() {
+                    LuaValue::Boolean(_) => {
+                        let mut bools = Vec::new();
+                        for value in values {
+                            if let LuaValue::Boolean(b) = value {
+                                bools.push(b);
+                            } else {
+                                return Err(LuaError::FromLuaConversionError {
+                                    from: "LuaValue",
+                                    to: "LuaOutput".to_string(),
+                                    message: Some("Invalid LuaOutput".to_string()),
+                                });
+                            }
+                        }
+                        let list = List::from_slice(&bools);
+                        list.into_output(&graph)
+                    }
+                    LuaValue::Number(_) => {
+                        let mut floats = Vec::new();
+                        for value in values {
+                            if let LuaValue::Number(f) = value {
+                                floats.push(f as f32);
+                            } else {
+                                return Err(LuaError::FromLuaConversionError {
+                                    from: "LuaValue",
+                                    to: "LuaOutput".to_string(),
+                                    message: Some("Invalid LuaOutput".to_string()),
+                                });
+                            }
+                        }
+                        let list = List::from_slice(&floats);
+                        list.into_output(&graph)
+                    }
+                    LuaValue::Integer(_) => {
+                        let mut ints = Vec::new();
+                        for value in values {
+                            if let LuaValue::Integer(i) = value {
+                                ints.push(i);
+                            } else {
+                                return Err(LuaError::FromLuaConversionError {
+                                    from: "LuaValue",
+                                    to: "LuaOutput".to_string(),
+                                    message: Some("Invalid LuaOutput".to_string()),
+                                });
+                            }
+                        }
+                        let list = List::from_slice(&ints);
+                        list.into_output(&graph)
+                    }
+                    LuaValue::String(_) => {
+                        let mut strings = Vec::new();
+                        for value in values {
+                            if let LuaValue::String(s) = value {
+                                strings.push(StringSignal::from_str(s.to_string_lossy().as_ref()));
+                            } else {
+                                return Err(LuaError::FromLuaConversionError {
+                                    from: "LuaValue",
+                                    to: "LuaOutput".to_string(),
+                                    message: Some("Invalid LuaOutput".to_string()),
+                                });
+                            }
+                        }
+                        let list = List::from_slice(&strings);
+                        list.into_output(&graph)
+                    }
+                    _ => {
+                        return Err(LuaError::FromLuaConversionError {
+                            from: "LuaValue",
+                            to: "LuaOutput".to_string(),
+                            message: Some("Invalid LuaOutput".to_string()),
+                        });
+                    }
+                };
+
+                Ok(LuaOutput(output))
+            }
             LuaValue::UserData(ud) => {
                 if let Ok(output) = ud.borrow::<LuaOutput>() {
                     return Ok(output.clone());
